@@ -1,6 +1,6 @@
 {
-    "name": "gmponos/guzzle_logger",
-    "description": "A Guzzle middleware to log request and responses automatically",
+    "name": "chaodada/guzzle_log",
+    "description": "一个Guzzle中间件，用于自动记录请求和响应",
     "keywords": [
         "psr3",
         "guzzle",
@@ -11,8 +11,8 @@
     "homepage": "https://github.com/gmponos/guzzle-log-middleware",
     "authors": [
         {
-            "name": "George Mponos",
-            "email": "gmponos@gmail.com"
+            "name": "iuu",
+            "email": "2167162990@qq.com"
         }
     ],
     "autoload": {
