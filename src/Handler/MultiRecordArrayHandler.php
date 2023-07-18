@@ -50,20 +50,31 @@ final class MultiRecordArrayHandler extends AbstractHandler
         ?TransferStats $stats = null,
         array $options = []
     ): void {
-        $this->logRequest($logger, $request, $options);
 
-        if ($stats !== null) {
-            $this->logStats($logger, $stats, $options);
-        }
-
+        $context = [];
+        $context = $this->logRequest($context,$logger, $request, $options);
         if ($response !== null) {
-            $this->logResponse($logger, $response, $options);
-        } else {
-            $this->logReason($logger, $exception, $options);
+            $context =  $this->logResponse($context,$logger, $response, $options);
         }
+
+        $level = $this->logLevelStrategy->getLevel($request, $options);
+        $logger->log($level, 'Guzzle HTTP request', $context);
+
+
+//        $this->logRequest($logger, $request, $options);
+//
+//        if ($stats !== null) {
+//            $this->logStats($logger, $stats, $options);
+//        }
+//
+//        if ($response !== null) {
+//            $this->logResponse($logger, $response, $options);
+//        } else {
+//            $this->logReason($logger, $exception, $options);
+//        }
     }
 
-    private function logRequest(LoggerInterface $logger, RequestInterface $request, array $options): void
+    private function logRequest(array $context,LoggerInterface $logger, RequestInterface $request, array $options): array
     {
         $context['request']['method'] = $request->getMethod();
         $context['request']['headers'] = $request->getHeaders();
@@ -73,12 +84,12 @@ final class MultiRecordArrayHandler extends AbstractHandler
         if ($request->getBody()->getSize() > 0) {
             $context['request']['body'] = $this->formatBody($request, $options);
         }
-
-        $level = $this->logLevelStrategy->getLevel($request, $options);
-        $logger->log($level, 'Guzzle HTTP request', $context);
+        return $context;
+//        $level = $this->logLevelStrategy->getLevel($request, $options);
+//        $logger->log($level, 'Guzzle HTTP request', $context);
     }
 
-    private function logResponse(LoggerInterface $logger, ResponseInterface $response, array $options): void
+    private function logResponse(array $context,LoggerInterface $logger, ResponseInterface $response, array $options): array
     {
         $context['response']['headers'] = $response->getHeaders();
         $context['response']['status_code'] = $response->getStatusCode();
@@ -88,9 +99,9 @@ final class MultiRecordArrayHandler extends AbstractHandler
         if ($response->getBody()->getSize() > 0) {
             $context['response']['body'] = $this->formatBody($response, $options);
         }
-
-        $level = $this->logLevelStrategy->getLevel($response, $options);
-        $logger->log($level, 'Guzzle HTTP response', $context);
+        return $context;
+//        $level = $this->logLevelStrategy->getLevel($response, $options);
+//        $logger->log($level, 'Guzzle HTTP response', $context);
     }
 
     private function logReason(LoggerInterface $logger, ?Throwable $exception, array $options): void

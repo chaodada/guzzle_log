@@ -11,3 +11,7 @@ phpcs.xml
 
 ### Custom
 build
+
+
+### idea
+./.idea
