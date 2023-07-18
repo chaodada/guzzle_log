@@ -53,10 +53,14 @@ final class MultiRecordArrayHandler extends AbstractHandler
 
         $context = [];
         $context = $this->logRequest($context,$logger, $request, $options);
+        if ($stats !== null) {
+            $this->logStats($logger, $stats, $options);
+        }
         if ($response !== null) {
             $context =  $this->logResponse($context,$logger, $response, $options);
+        }else{
+            $context =  $this->logReason($context,$logger, $exception, $options);
         }
-
         $level = $this->logLevelStrategy->getLevel($request, $options);
         $logger->log($level, 'Guzzle HTTP request', $context);
 
@@ -104,19 +108,19 @@ final class MultiRecordArrayHandler extends AbstractHandler
 //        $logger->log($level, 'Guzzle HTTP response', $context);
     }
 
-    private function logReason(LoggerInterface $logger, ?Throwable $exception, array $options): void
+    private function logReason(array $context,LoggerInterface $logger, ?Throwable $exception, array $options): array
     {
         if ($exception === null) {
-            return;
+            return [];
         }
 
         $context['reason']['code'] = $exception->getCode();
         $context['reason']['message'] = $exception->getMessage();
         $context['reason']['line'] = $exception->getLine();
         $context['reason']['file'] = $exception->getFile();
-
-        $level = $this->logLevelStrategy->getLevel($exception, $options);
-        $logger->log($level, 'Guzzle HTTP exception', $context);
+        return  $context;
+//        $level = $this->logLevelStrategy->getLevel($exception, $options);
+//        $logger->log($level, 'Guzzle HTTP exception', $context);
     }
 
     private function logStats(LoggerInterface $logger, TransferStats $stats, array $options): void
