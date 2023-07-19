@@ -20,6 +20,7 @@ use Throwable;
 interface HandlerInterface
 {
     public function log(
+        string $reqId,
         LoggerInterface $logger,
         RequestInterface $request,
         ?ResponseInterface $response = null,

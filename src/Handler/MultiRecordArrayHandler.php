@@ -28,8 +28,6 @@ final class MultiRecordArrayHandler extends AbstractHandler
      */
     private $summarySize;
 
-    private $logContext = [];
-
     /**
      * @param int $truncateSize If the body of the request/response is greater than the size of this integer the body will be truncated
      * @param int $summarySize The size to use for the summary of a truncated body
@@ -45,6 +43,7 @@ final class MultiRecordArrayHandler extends AbstractHandler
     }
 
     public function log(
+        string $reqId,
         LoggerInterface $logger,
         RequestInterface $request,
         ?ResponseInterface $response = null,
@@ -52,72 +51,71 @@ final class MultiRecordArrayHandler extends AbstractHandler
         ?TransferStats $stats = null,
         array $options = []
     ): void {
-        $this->logRequest($logger, $request, $options);
+        $this->logRequest($reqId,$logger, $request, $options);
 
         if ($stats !== null) {
-            $this->logStats($logger, $stats, $options);
+            $this->logStats($reqId,$logger, $stats, $options);
         }
 
         if ($response !== null) {
-            $this->logResponse($logger, $response, $options);
+            $this->logResponse($reqId,$logger, $response, $options);
         } else {
-            $this->logReason($logger, $exception, $options);
+            $this->logReason($reqId,$logger, $exception, $options);
         }
-
-//        $level = $this->logLevelStrategy->getLevel($request, $options);
-        $logger->info('Guzzle HTTP request', $this->logContext);
-
     }
 
-    private function logRequest(LoggerInterface $logger, RequestInterface $request, array $options): void
+    private function logRequest(string $reqId,LoggerInterface $logger, RequestInterface $request, array $options): void
     {
-        $this->logContext['request']['method'] = $request->getMethod();
-        $this->logContext['request']['headers'] = $request->getHeaders();
-        $this->logContext['request']['uri'] = $request->getRequestTarget();
-        $this->logContext['request']['version'] = 'HTTP/' . $request->getProtocolVersion();
+        $context['request']['req_id'] = $reqId;
+        $context['request']['method'] = $request->getMethod();
+        $context['request']['headers'] = $request->getHeaders();
+        $context['request']['uri'] = $request->getRequestTarget();
+        $context['request']['version'] = 'HTTP/' . $request->getProtocolVersion();
 
         if ($request->getBody()->getSize() > 0) {
-            $this->logContext['request']['body'] = $this->formatBody($request, $options);
+            $context['request']['body'] = $this->formatBody($request, $options);
         }
 
-//        $level = $this->logLevelStrategy->getLevel($request, $options);
-//        $logger->log($level, 'Guzzle HTTP request', $context);
+        $level = $this->logLevelStrategy->getLevel($request, $options);
+        $logger->log($level, 'Guzzle HTTP request', $context);
     }
 
-    private function logResponse(LoggerInterface $logger, ResponseInterface $response, array $options): void
+    private function logResponse(string $reqId,LoggerInterface $logger, ResponseInterface $response, array $options): void
     {
-        $this->logContext['response']['headers'] = $response->getHeaders();
-        $this->logContext['response']['status_code'] = $response->getStatusCode();
-        $this->logContext['response']['version'] = 'HTTP/' . $response->getProtocolVersion();
-        $this->logContext['response']['message'] = $response->getReasonPhrase();
+        $context['response']['req_id'] = $reqId;
+        $context['response']['headers'] = $response->getHeaders();
+        $context['response']['status_code'] = $response->getStatusCode();
+        $context['response']['version'] = 'HTTP/' . $response->getProtocolVersion();
+        $context['response']['message'] = $response->getReasonPhrase();
 
         if ($response->getBody()->getSize() > 0) {
-            $this->logContext['response']['body'] = $this->formatBody($response, $options);
+            $context['response']['body'] = $this->formatBody($response, $options);
         }
 
-//        $level = $this->logLevelStrategy->getLevel($response, $options);
-//        $logger->log($level, 'Guzzle HTTP response', $context);
+        $level = $this->logLevelStrategy->getLevel($response, $options);
+        $logger->log($level, 'Guzzle HTTP response', $context);
     }
 
-    private function logReason(LoggerInterface $logger, ?Throwable $exception, array $options): void
+    private function logReason(string $reqId,LoggerInterface $logger, ?Throwable $exception, array $options): void
     {
         if ($exception === null) {
             return;
         }
+        $context['reason']['req_id'] = $reqId;
+        $context['reason']['code'] = $exception->getCode();
+        $context['reason']['message'] = $exception->getMessage();
+        $context['reason']['line'] = $exception->getLine();
+        $context['reason']['file'] = $exception->getFile();
 
-        $this->logContext['reason']['code'] = $exception->getCode();
-        $this->logContext['reason']['message'] = $exception->getMessage();
-        $this->logContext['reason']['line'] = $exception->getLine();
-        $this->logContext['reason']['file'] = $exception->getFile();
-
-//        $level = $this->logLevelStrategy->getLevel($exception, $options);
-//        $logger->log($level, 'Guzzle HTTP exception', $context);
+        $level = $this->logLevelStrategy->getLevel($exception, $options);
+        $logger->log($level, 'Guzzle HTTP exception', $context);
     }
 
-    private function logStats(LoggerInterface $logger, TransferStats $stats, array $options): void
+    private function logStats(string $reqId,LoggerInterface $logger, TransferStats $stats, array $options): void
     {
         $this->logLevelStrategy->getLevel($stats, $options);
         $logger->debug('Guzzle HTTP statistics', [
+            'req_id' => $reqId,
             'time' => $stats->getTransferTime(),
             'uri' => $stats->getEffectiveUri(),
         ]);

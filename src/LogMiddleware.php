@@ -81,10 +81,11 @@ final class LogMiddleware
                 };
             }
 
+            $reqId = uniqid('req_id');
             return $handler($request, $options)
                 ->then(
-                    $this->handleSuccess($request, $options),
-                    $this->handleFailure($request, $options)
+                    $this->handleSuccess($request, $options,$reqId),
+                    $this->handleFailure($request, $options,$reqId)
                 );
         };
     }
@@ -92,12 +93,12 @@ final class LogMiddleware
     /**
      * Returns a function which is handled when a request was successful.
      */
-    private function handleSuccess(RequestInterface $request, array $options): callable
+    private function handleSuccess(RequestInterface $request, array $options,string $reqId): callable
     {
-        return function (ResponseInterface $response) use ($request, $options) {
+        return function (ResponseInterface $response) use ($request, $options,$reqId) {
             // if onFailureOnly is true then it must not log the response since it was successful.
             if ($this->onFailureOnly === false) {
-                $this->handler->log($this->logger, $request, $response, null, $this->stats, $options);
+                $this->handler->log($reqId,$this->logger, $request, $response, null, $this->stats, $options);
             }
 
             return $response;
@@ -107,15 +108,15 @@ final class LogMiddleware
     /**
      * Returns a function which is handled when a request was rejected.
      */
-    private function handleFailure(RequestInterface $request, array $options): callable
+    private function handleFailure(RequestInterface $request, array $options,string $reqId): callable
     {
-        return function (\Exception $reason) use ($request, $options) {
+        return function (\Exception $reason) use ($request, $options,$reqId) {
             if ($reason instanceof RequestException && $reason->hasResponse() === true) {
-                $this->handler->log($this->logger, $request, $reason->getResponse(), $reason, $this->stats, $options);
+                $this->handler->log($reqId,$this->logger, $request, $reason->getResponse(), $reason, $this->stats, $options);
                 return \GuzzleHttp\Promise\rejection_for($reason);
             }
 
-            $this->handler->log($this->logger, $request, null, $reason, $this->stats, $options);
+            $this->handler->log($reqId,$this->logger, $request, null, $reason, $this->stats, $options);
             return \GuzzleHttp\Promise\rejection_for($reason);
         };
     }
