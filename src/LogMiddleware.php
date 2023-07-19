@@ -73,15 +73,15 @@ final class LogMiddleware
     public function __invoke(callable $handler): callable
     {
         return function (RequestInterface $request, array $options) use ($handler): PromiseInterface {
-            $this->setOptions($options);
+            $reqId = uniqid('req_id_',true);
 
+            $this->setOptions($options);
             if ($this->logStatistics && !isset($options['on_stats'])) {
                 $options['on_stats'] = function (TransferStats $stats) {
                     $this->stats = $stats;
                 };
             }
 
-            $reqId = uniqid('req_id');
             return $handler($request, $options)
                 ->then(
                     $this->handleSuccess($request, $options,$reqId),
